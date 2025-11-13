@@ -21,3 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "RTEDV"
 include(":app")
+include(":jni")
+include(":gl")
+include(":web")

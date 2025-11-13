@@ -10,6 +10,9 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/gl" />
+            <option value="$PROJECT_DIR$/jni" />
+            <option value="$PROJECT_DIR$/web" />
           </set>
         </option>
       </GradleProjectSettings>
