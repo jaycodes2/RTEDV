@@ -1,26 +1,32 @@
-// In jni/src/main/cpp/OpenCVProcessor.h
-
 #ifndef REALTIMEVIDEOPROCESSOR_OPENCVPROCESSOR_H
 #define REALTIMEVIDEOPROCESSOR_OPENCVPROCESSOR_H
 
-// Forward declaration for the core OpenCV Mat class
-// We use 'class Mat' to avoid including the massive OpenCV headers here, which keeps compile times fast.
+#include <jni.h>
+#include <string>
+#include <GLES2/gl2.h>
+
 namespace cv {
     class Mat;
 }
 
 namespace processor {
-    /**
-     * @brief Applies a Canny Edge Detection filter to the input image.
-     * @param matPtr A pointer to the OpenCV Mat object to be processed.
-     */
-    void applyCannyEdge(cv::Mat* matPtr);
 
-    /**
-     * @brief Converts the image to grayscale (or other simple filter).
-     * @param matPtr A pointer to the OpenCV Mat object to be processed.
-     */
+    // Core processing functions
+    void applyCannyEdge(cv::Mat* matPtr);
     void applyGrayscale(cv::Mat* matPtr);
+
+    // GL Transfer function (Uses GLuint for texture ID)
+    void transferMatToGLTexture(cv::Mat* matPtr, GLuint textureId);
+
+    // YUV Conversion function (CRITICAL FIX: Added JNIEnv* argument)
+    jlong yuv420ToMat(
+            JNIEnv* env, // <-- CRITICAL: Required to access ByteBuffer memory
+            int width, int height,
+            jobject yBuffer, jobject uBuffer, jobject vBuffer,
+            int yPixelStride, int uPixelStride, int vPixelStride,
+            int yRowStride, int uRowStride, int vRowStride,
+            jlong matAddr
+    );
 
 } // namespace processor
 

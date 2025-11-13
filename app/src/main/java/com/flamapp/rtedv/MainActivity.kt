@@ -20,16 +20,17 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.LifecycleOwner
 import com.flamapp.jni.NativeProcessor
 import com.flamapp.rtedv.ui.theme.RTEDVTheme
+import com.flamapp.gl.GLView // <-- Imports GLView from your GL module
 import com.google.common.util.concurrent.ListenableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import android.widget.LinearLayout // New import needed
-import android.widget.FrameLayout // New import needed
-import androidx.camera.view.PreviewView // New import needed
-import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.LinearLayout
+import android.widget.FrameLayout
+import androidx.camera.view.PreviewView
 
 class MainActivity : ComponentActivity() {
 
@@ -74,7 +75,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RTEDVTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    CameraAnalysisScreen(
+                    CameraPreviewScreen( // <-- Using the GL integration Composable
                         cameraProviderFuture = ProcessCameraProvider.getInstance(LocalContext.current),
                         executor = cameraExecutor,
                         lifecycleOwner = LocalLifecycleOwner.current,
@@ -93,12 +94,11 @@ class MainActivity : ComponentActivity() {
 }
 
 // =================================================================================
-// Composable UI (Simplified to only run analysis)
+// Composable UI (Uses GLView for rendering)
 // =================================================================================
 
-
 @Composable
-fun CameraAnalysisScreen(
+fun CameraPreviewScreen(
     cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
     executor: ExecutorService,
     lifecycleOwner: LifecycleOwner,
@@ -106,56 +106,69 @@ fun CameraAnalysisScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val TAG = "CameraAnalysisScreen"
+    val TAG = "CameraPreviewScreen"
 
     var matAddress: Long = 0L
 
-    // FIX: Use a PreviewView (a concrete View) as the placeholder for the camera Preview
-    AndroidView(
+    // 1. Host the OpenGL View (GLView from the 'gl' module)
+    AndroidView<GLView>(
         modifier = modifier.fillMaxSize(),
         factory = {
-            // Create a dedicated PreviewView for the Camera Preview
-            PreviewView(it).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            }
+            // Instantiate the GLView (a SurfaceView)
+            GLView(context)
         },
-        update = { previewView -> // Now using a concrete PreviewView
+        update = { glView: GLView -> // Explicitly specify GLView type
+            // 2. Start the Camera when the GLView is available
             cameraProviderFuture.addListener({
                 val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-                // Setup Preview use case and set the PreviewView's SurfaceProvider as the target
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
+                // 2a. Setup Preview use case
+                val preview = Preview.Builder().build()
 
-                // Setup Image Analysis use case (Unchanged)
+                // CRITICAL FIX: The Preview use case MUST be bound to a surface,
+                // but we must use the GLView's surface to display the filtered output.
+                // We use the GLView's provided surfaceProvider here.
+                preview.setSurfaceProvider(glView.surfaceProvider)
+
+                // 2b. Setup Image Analysis use case
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
 
-                // Analyzer logic (The minimal diagnostic logic)
                 imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { imageProxy: ImageProxy ->
+
+                    // --- Frame Processing Pipeline (The core logic) ---
+
                     try {
-                        // Log only to confirm the analysis loop is running
-                        Log.d(TAG, "CameraX Analysis Loop Running.")
+                        // 1. YUV to Mat conversion (Calls C++)
+                        Log.d(TAG, "Attempting YUV conversion...") // <--- NEW DIAGNOSTIC LOG
+                        val inputMatAddress = YuvToMatConverter.imageProxyToMatAddress(imageProxy, matAddress)
+
+                        // 2. OpenCV Processing (Canny Edge)
+                        val processedMatAddress = nativeProcessor.processFrame(inputMatAddress)
+
+                        // 3. CRITICAL: Update the GL View with the processed data
+                        glView.updateTexture(processedMatAddress)
+
+                        matAddress = processedMatAddress
+
+                        Log.d(TAG, "Frame processed and sent to GL.")
                     } catch (e: Exception) {
-                        Log.e(TAG, "Analyzer failed unexpectedly: ${e.message}")
+//...
+                        Log.e(TAG, "Frame analysis failed: ${e.message}")
                     } finally {
                         imageProxy.close()
                     }
                 })
 
-                // Bind the use cases to the camera
+                // 2c. Bind the use cases to the camera
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                 try {
                     cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(
                         lifecycleOwner,
                         cameraSelector,
-                        preview, // Now bound to the PreviewView
+                        preview,
                         imageAnalysis
                     )
                 } catch (exc: Exception) {
@@ -166,3 +179,5 @@ fun CameraAnalysisScreen(
         }
     )
 }
+
+

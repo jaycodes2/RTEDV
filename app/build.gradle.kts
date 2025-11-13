@@ -42,6 +42,7 @@ android {
 dependencies {
 
     implementation(project(":jni"))
+    implementation(project(":gl"))
 
     val cameraxVersion = "1.3.1" // Check for the latest stable version
     implementation("androidx.camera:camera-core:$cameraxVersion")
