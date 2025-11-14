@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView
 import org.opencv.core.Mat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -24,19 +25,20 @@ class CameraGlRenderer(private val glView: GlCameraView) : GLSurfaceView.Rendere
     @Volatile var textureId: Int = 0 // Public ID for synchronization
 
     // Vertex coordinates for a simple rectangle that covers the entire screen (fullscreen quad)
+    // Updated for 90-degree rotation - swap and invert coordinates
     private val vertexData = floatArrayOf(
         -1.0f, -1.0f, 0.0f,  // bottom left
-        -1.0f, 1.0f, 0.0f,   // top left
         1.0f, -1.0f, 0.0f,   // bottom right
+        -1.0f, 1.0f, 0.0f,   // top left
         1.0f, 1.0f, 0.0f     // top right
     )
 
-    // Texture coordinates (matches the vertices to align the image correctly)
+    // Texture coordinates - rotated 90 degrees counter-clockwise
     private val textureData = floatArrayOf(
-        0.0f, 1.0f,  // bottom left
-        0.0f, 0.0f,  // top left
-        1.0f, 1.0f,  // bottom right
-        1.0f, 0.0f   // top right
+        1.0f, 1.0f,  // bottom left -> was top right
+        1.0f, 0.0f,  // bottom right -> was top left
+        0.0f, 1.0f,  // top left -> was bottom right
+        0.0f, 0.0f   // top right -> was bottom left
     )
 
     // Buffers for passing vertex and texture coordinates to the GPU
@@ -67,7 +69,7 @@ class CameraGlRenderer(private val glView: GlCameraView) : GLSurfaceView.Rendere
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
 
-        // Set texture parameters (CRITICAL for power-of-two texture handling)
+        // Set texture parameters
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
@@ -101,7 +103,7 @@ class CameraGlRenderer(private val glView: GlCameraView) : GLSurfaceView.Rendere
                     // Clear and prepare buffer
                     buffer?.clear()
 
-                    // Directly get the Mat data into the buffer - FIXED APPROACH
+                    // Directly get the Mat data into the buffer
                     val data = ByteArray(requiredSize)
                     mat.get(0, 0, data)
                     buffer?.put(data)
@@ -151,8 +153,6 @@ class CameraGlRenderer(private val glView: GlCameraView) : GLSurfaceView.Rendere
      * Called by GlCameraView to provide the next frame.
      */
     fun updateFrame(mat: Mat) {
-        // Use synchronization since this is called from the UI thread (via requestRender)
-        // while onDrawFrame runs on the GL thread.
         synchronized(this) {
             currentMat = mat
         }
