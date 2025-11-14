@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewFinder: GlCameraView
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var modeToggleButton: FloatingActionButton
-    private lateinit var modeIndicator: TextView
     private var imageAnalysis: ImageAnalysis? = null
 
     // Stats UI
@@ -72,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
         viewFinder = findViewById(R.id.viewFinder)
         modeToggleButton = findViewById(R.id.modeToggleButton)
-        modeIndicator = findViewById(R.id.modeIndicator)
+
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         // Initialize stats views
@@ -171,11 +170,11 @@ class MainActivity : AppCompatActivity() {
         when (currentMode) {
             CameraMode.NORMAL -> {
                 modeToggleButton.setImageResource(R.drawable.ic_edge_detection)
-                modeIndicator.text = "NORMAL MODE"
+//                modeIndicator.text = "NORMAL MODE"
             }
             CameraMode.EDGE_DETECTION -> {
                 modeToggleButton.setImageResource(R.drawable.ic_normal_camera)
-                modeIndicator.text = "EDGE DETECTION MODE"
+//                modeIndicator.text = "EDGE DETECTION MODE"
             }
         }
     }
