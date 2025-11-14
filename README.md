@@ -168,7 +168,8 @@ void main() {
 
 
 ## 🎥 Demo & Screenshots
-
+![NOMRAL OUTPUT](https://github.com/jaycodes2/RTEDV/blob/gl/edge_detection.jpg?raw=true)
+![EDGE_DETECTION](https://github.com/jaycodes2/RTEDV/blob/gl/normal_output.jpg?raw=true)
 
 ## 🔮 Future Enhancements
 
