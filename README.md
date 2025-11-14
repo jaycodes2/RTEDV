@@ -102,7 +102,7 @@ cd RTEDV
 
 ### Performance Monitoring
 - **FPS Counter**: Real-time frames per second
-- **Processing Time**: Edge detection algorithm duration
+- **Processing Time**: Edge detection algorithm duration  
 - **Frame Count**: Total processed frames
 - **Memory Usage**: Current application memory consumption
 
@@ -145,23 +145,23 @@ Mat processFrame(Mat& inputFrame) {
 
 ```
 RTEDV/
-├── 🎯 app/                          # Main Application Module
+├── app/                          # Main Application Module
 │   ├── src/main/java/com/flamapp/rtedv/
-│   │   ├── MainActivity.kt          # Camera lifecycle & UI controller
-│   │   └── performance/            # Metrics and monitoring
-│   ├── res/layout/                 # Material Design layouts
-│   └── res/drawable/               # Adaptive icons and vectors
-├── 🎮 gl/                           # OpenGL Rendering Engine
+│   │   ├── MainActivity.kt       # Camera lifecycle & UI controller
+│   │   └── performance/          # Metrics and monitoring
+│   ├── res/layout/               # Material Design layouts
+│   └── res/drawable/             # Adaptive icons and vectors
+├── gl/                           # OpenGL Rendering Engine
 │   └── src/main/java/com/flamapp/gl/
-│       ├── GlCameraView.kt         # Custom GL surface view
-│       ├── CameraGlRenderer.kt     # 60 FPS renderer
-│       └── GlUtils.kt             # Shader compilation
-├── ⚡ jni/                          # Native Performance Core
+│       ├── GlCameraView.kt       # Custom GL surface view
+│       ├── CameraGlRenderer.kt   # 60 FPS renderer
+│       └── GlUtils.kt            # Shader compilation
+├── jni/                          # Native Performance Core
 │   └── src/main/cpp/
-│       ├── native-lib.cpp         # JNI bridge interface
-│       ├── CMakeLists.txt         # Native build configuration
-│       └── libs/                  # Multi-arch OpenCV binaries
-└── 📚 opencv_java/                # OpenCV Java Bindings
+│       ├── native-lib.cpp        # JNI bridge interface
+│       ├── CMakeLists.txt        # Native build configuration
+│       └── libs/                 # Multi-arch OpenCV binaries
+└── opencv_java/                  # OpenCV Java Bindings
 ```
 
 ## 🛠️ Development Guide
@@ -196,7 +196,7 @@ enum class CameraMode {
 
 ### Extending Functionality
 - **New Filters**: Implement in `native-lib.cpp`
-- **UI Enhancements**: Modify `activity_main.xml`
+- **UI Enhancements**: Modify `activity_main.xml` 
 - **Performance Tracking**: Extend stats in `MainActivity.kt`
 
 ## 📊 Performance Benchmarks
@@ -232,6 +232,11 @@ git push origin feature/amazing-enhancement
 - 🔌 **Integration**: New computer vision algorithms
 - 🐛 **Bug Fixes**: Issue resolution and stability improvements
 
+### Code Standards
+- Follow Kotlin coding conventions
+- Use meaningful commit messages
+- Add comments for complex algorithms
+- Update documentation with changes
 
 
 ## 🙏 Acknowledgments
@@ -248,15 +253,3 @@ git push origin feature/amazing-enhancement
 - Open source computer vision community
 
 ---
-
-<div align="center">
-
-## 🚀 Ready to Explore?
-
-**Experience real-time edge detection on your Android device today!**
-
-*Built with ❤️ using Kotlin, OpenCV, and OpenGL ES*
-
-[📥 Download APK](#) • [🐛 Report Issues](https://github.com/yourusername/RTEDV/issues) • [💡 Request Features](https://github.com/yourusername/RTEDV/issues)
-
-</div>
