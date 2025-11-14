@@ -4,7 +4,7 @@
 
 This project implements a real-time edge detection Android application that captures camera frames, processes them using OpenCV C++ via JNI, renders the output with OpenGL ES, and includes a TypeScript web viewer for displaying processed frames.
 
-![Architecture Diagram](deepseek_mermaid_20251113_c7d615.png)
+![Architecture Diagram](workflow.png)
 
 ## 🏗️ System Architecture
 
