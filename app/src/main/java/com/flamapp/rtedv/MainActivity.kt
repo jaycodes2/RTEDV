@@ -2,9 +2,14 @@ package com.flamapp.rtedv
 
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Debug
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.util.Size
-import android.widget.ImageButton
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -13,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.flamapp.gl.GlCameraView
 import com.flamapp.jni.NativeProcessor
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.CvType
 import org.opencv.core.Mat
@@ -24,12 +30,33 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var viewFinder: GlCameraView
     private lateinit var cameraExecutor: ExecutorService
+    private lateinit var modeToggleButton: FloatingActionButton
+    private lateinit var modeIndicator: TextView
     private var imageAnalysis: ImageAnalysis? = null
+
+    // Stats UI
+    private lateinit var fpsText: TextView
+    private lateinit var processingTimeText: TextView
+    private lateinit var modeText: TextView
+    private lateinit var frameCountText: TextView
+
+    // Performance tracking
+    private var lastFpsTime = System.currentTimeMillis()
+    private var fps = 0.0
+    private val statsHandler = Handler(Looper.getMainLooper())
+    private val statsUpdateInterval = 1000L // Update stats every second
 
     // Mat objects (reused across frames for efficiency)
     private var yuvMat: Mat? = null
     private var rgbaMat: Mat? = null
-    private var isProcessingEnabled = true
+
+    // Camera modes
+    private enum class CameraMode {
+        NORMAL,
+        EDGE_DETECTION
+    }
+
+    private var currentMode = CameraMode.EDGE_DETECTION
 
     // Constants
     private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
@@ -44,20 +71,121 @@ class MainActivity : AppCompatActivity() {
         initOpenCV()
 
         viewFinder = findViewById(R.id.viewFinder)
+        modeToggleButton = findViewById(R.id.modeToggleButton)
+        modeIndicator = findViewById(R.id.modeIndicator)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        // Toggle Button Logic
-        findViewById<ImageButton>(R.id.toggleButton).setOnClickListener {
-            isProcessingEnabled = !isProcessingEnabled
-            val status = if (isProcessingEnabled) "Edge Detection ON" else "Raw Feed ON"
-            Toast.makeText(this, status, Toast.LENGTH_SHORT).show()
-        }
+        // Initialize stats views
+        initStatsViews()
+
+        // Setup mode toggle button
+        setupModeToggle()
+
+        // Start stats updater
+        startStatsUpdater()
 
         if (allPermissionsGranted()) {
             startCamera()
         } else {
-            requestPermissions()
+            ActivityCompat.requestPermissions(
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+            )
         }
+    }
+
+    private fun initStatsViews() {
+        // Inflate stats overlay
+        val statsOverlay = layoutInflater.inflate(R.layout.stats_overlay, null) as LinearLayout
+        addContentView(statsOverlay, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(16, 16, 16, 16)
+        })
+
+        fpsText = statsOverlay.findViewById(R.id.fpsText)
+        processingTimeText = statsOverlay.findViewById(R.id.processingTimeText)
+        modeText = statsOverlay.findViewById(R.id.modeText)
+        frameCountText = statsOverlay.findViewById(R.id.frameCountText)
+    }
+
+    private fun startStatsUpdater() {
+        statsHandler.post(object : Runnable {
+            override fun run() {
+                updateStats()
+                statsHandler.postDelayed(this, statsUpdateInterval)
+            }
+        })
+    }
+
+    private fun updateStats() {
+        val nativeFrameCount = NativeProcessor.getFrameCount()
+        val nativeProcessingTime = NativeProcessor.getTotalProcessingTime()
+
+        // Calculate FPS
+        val currentTime = System.currentTimeMillis()
+        val elapsedSeconds = (currentTime - lastFpsTime) / 1000.0
+        if (elapsedSeconds > 0) {
+            fps = nativeFrameCount.toDouble() / elapsedSeconds
+        }
+
+        // Calculate average processing time per frame
+        val avgProcessingTime = if (nativeFrameCount > 0) nativeProcessingTime / nativeFrameCount else 0
+
+        // Get memory info
+        val memoryInfo = Debug.MemoryInfo()
+        Debug.getMemoryInfo(memoryInfo)
+        val usedMemory = memoryInfo.dalvikPss / 1024.0 // MB
+
+        // Update UI on main thread
+        runOnUiThread {
+            fpsText.text = "FPS: ${"%.1f".format(fps)}"
+            processingTimeText.text = "Proc: ${"%.1f".format(avgProcessingTime / 1000.0)} ms"
+            modeText.text = "Mode: ${currentMode.name}"
+            frameCountText.text = "Frames: $nativeFrameCount"
+        }
+
+        // Reset stats for next interval
+        NativeProcessor.resetStats()
+        lastFpsTime = currentTime
+    }
+
+    private fun setupModeToggle() {
+        updateModeUI()
+
+        modeToggleButton.setOnClickListener {
+            currentMode = when (currentMode) {
+                CameraMode.NORMAL -> CameraMode.EDGE_DETECTION
+                CameraMode.EDGE_DETECTION -> CameraMode.NORMAL
+            }
+
+            updateModeUI()
+            showModeToast()
+            // Reset stats when mode changes
+            NativeProcessor.resetStats()
+            lastFpsTime = System.currentTimeMillis()
+        }
+    }
+
+    private fun updateModeUI() {
+        when (currentMode) {
+            CameraMode.NORMAL -> {
+                modeToggleButton.setImageResource(R.drawable.ic_edge_detection)
+                modeIndicator.text = "NORMAL MODE"
+            }
+            CameraMode.EDGE_DETECTION -> {
+                modeToggleButton.setImageResource(R.drawable.ic_normal_camera)
+                modeIndicator.text = "EDGE DETECTION MODE"
+            }
+        }
+    }
+
+    private fun showModeToast() {
+        val message = when (currentMode) {
+            CameraMode.NORMAL -> "Normal Camera Mode"
+            CameraMode.EDGE_DETECTION -> "Edge Detection Mode"
+        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     // --- 1. Initialization & Permissions ---
@@ -73,12 +201,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestPermissions() {
-        ActivityCompat.requestPermissions(
-            this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-        )
     }
 
     override fun onRequestPermissionsResult(
@@ -161,15 +283,16 @@ class MainActivity : AppCompatActivity() {
         override fun analyze(imageProxy: ImageProxy) {
             val currentFrameMat = convertImageProxyToMat(imageProxy)
 
-            if (isProcessingEnabled) {
-                // Process the frame on the CPU/JNI side
-                NativeProcessor.processFrame(currentFrameMat.nativeObj)
+            when (currentMode) {
+                CameraMode.EDGE_DETECTION -> {
+                    NativeProcessor.processFrame(currentFrameMat.nativeObj)
+                }
+                CameraMode.NORMAL -> {
+                    // Normal mode - no processing
+                }
             }
 
-            // Send the processed Mat to the OpenGL View for GPU rendering
             viewFinder.onFrame(currentFrameMat)
-
-            // Must close the image to release the buffer and receive the next frame
             imageProxy.close()
         }
     }
@@ -178,6 +301,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        statsHandler.removeCallbacksAndMessages(null)
         cameraExecutor.shutdown()
         rgbaMat?.release()
         yuvMat?.release()
