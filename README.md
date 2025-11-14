@@ -133,14 +133,6 @@ npm start
 6. **Display**: Final output on `TextureView`
 7. **Export**: Optional frame save for web viewer
 
-## 📊 Performance Metrics
-
-- **Target FPS**: 10-15 FPS (minimum)
-- **Achieved FPS**: 400+ FPS (hardware capability)
-- **Processing Time**: <66ms per frame
-- **Memory Usage**: Optimized with `MemoryMonitor`
-- **Resolution**: Device camera native resolution
-
 ## 🛠️ Technical Implementation
 
 ### JNI Communication
