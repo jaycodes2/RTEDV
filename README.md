@@ -6,6 +6,7 @@ This project implements a real-time edge detection Android application that capt
 
 ![Architecture Diagram]([workflow](./worklow.png)
 
+
 ## 🏗️ System Architecture
 
 ### Core Components Flow
