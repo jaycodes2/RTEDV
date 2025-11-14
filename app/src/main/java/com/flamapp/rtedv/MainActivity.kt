@@ -234,6 +234,7 @@ class MainActivity : AppCompatActivity() {
             imageAnalysis = ImageAnalysis.Builder()
                 .setTargetResolution(Size(640, 480))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setTargetRotation(viewFinder.display.rotation) // ADD THIS LINE
                 .build()
 
             // Set the frame analyzer to our custom processor
@@ -254,6 +255,25 @@ class MainActivity : AppCompatActivity() {
     // --- 3. Real-Time Frame Processing ---
 
     inner class FrameProcessor : ImageAnalysis.Analyzer {
+
+        override fun analyze(imageProxy: ImageProxy) {
+            // Get the rotation relative to the device's natural orientation
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+
+            val currentFrameMat = convertImageProxyToMat(imageProxy)
+
+            when (currentMode) {
+                CameraMode.EDGE_DETECTION -> {
+                    NativeProcessor.processFrame(currentFrameMat.nativeObj)
+                }
+                CameraMode.NORMAL -> {
+                    // Normal mode - no processing
+                }
+            }
+
+            viewFinder.onFrame(currentFrameMat)
+            imageProxy.close()
+        }
 
         private fun convertImageProxyToMat(image: ImageProxy): Mat {
             val yBuffer = image.planes[0].buffer
@@ -278,22 +298,6 @@ class MainActivity : AppCompatActivity() {
             Imgproc.cvtColor(yuvMat, rgbaMat, Imgproc.COLOR_YUV2RGBA_NV21)
 
             return rgbaMat!!
-        }
-
-        override fun analyze(imageProxy: ImageProxy) {
-            val currentFrameMat = convertImageProxyToMat(imageProxy)
-
-            when (currentMode) {
-                CameraMode.EDGE_DETECTION -> {
-                    NativeProcessor.processFrame(currentFrameMat.nativeObj)
-                }
-                CameraMode.NORMAL -> {
-                    // Normal mode - no processing
-                }
-            }
-
-            viewFinder.onFrame(currentFrameMat)
-            imageProxy.close()
         }
     }
 
