@@ -4,7 +4,8 @@
 
 This project implements a real-time edge detection Android application that captures camera frames, processes them using OpenCV C++ via JNI, renders the output with OpenGL ES, and includes a TypeScript web viewer for displaying processed frames.
 
-![Architecture Diagram]([workflow.png](https://github.com/jaycodes2/RTEDV/blob/63a8d546998e65cc725e08d13de5869d33aed9d8/workflow))
+![Architecture Diagram](https://github.com/jaycodes2/RTEDV/blob/be1ea7082a5c71407ce1d7ae9cde44029d8bf2fb/architecture_diagram.png?raw=true)
+
 
 ## 🏗️ System Architecture
 
