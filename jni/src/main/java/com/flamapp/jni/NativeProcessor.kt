@@ -19,4 +19,11 @@ object NativeProcessor {
      * Updates OpenGL texture with the processed frame
      */
     external fun updateGLTexture(matAddrRgba: Long, textureId: Int)
+
+    /**
+     * Performance monitoring functions
+     */
+    external fun getFrameCount(): Long
+    external fun getTotalProcessingTime(): Long
+    external fun resetStats()
 }
