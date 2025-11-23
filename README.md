@@ -22,6 +22,8 @@ RTEDV demonstrates cutting-edge mobile computer vision capabilities by combining
 
 | Normal Camera Mode | Edge Detection Mode |
 |:------------------:|:-------------------:|
+| ![Normal Mode](./edge_detetction.jpg) | ![Edge Detection Mode](./normal_output.jpg) |
+
 | ![Normal Mode](./before.jpg) | ![Edge Detection Mode](./after.jpg) |
 
 </div>
